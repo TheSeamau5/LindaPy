@@ -70,6 +70,24 @@ def remove_host(host, port):
     # Done
     return True
 
+# Get all addresses from local store
+def get_all_addresses():
+    # In-memory address store
+    addresses = []
+
+    # Read all the addresses in memory
+    with open(NETS_FILE_PATH, 'r') as file:
+        for address in csv.reader(file, delimiter=','):
+            addresses.append(address)
+
+    return addresses
+
+# Get the local address (which is the first one)
+def get_local_address():
+    with open(NETS_FILE_PATH, 'r') as file:
+        for address in csv.reader(file, delimiter=','):
+            return address
+
 
 # Put a tuple in the tuple store
 def put_tuple(tupl):
