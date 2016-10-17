@@ -1,3 +1,4 @@
+import ast
 import csv
 import os
 
@@ -22,12 +23,6 @@ def create_local_store():
         open(TUPLE_FILE_PATH, 'w+')
 
 
-# Linda API:
-# add host
-# remove host
-# put tuple
-# read tuple
-# remove tuple
 
 # Add a host to the local store
 def add_host(host, port):
@@ -42,7 +37,7 @@ def add_host(host, port):
     # Add the new address to in-memory store
     addresses.append((host, port))
 
-    # Write the in-memory story to the local store
+    # Write the in-memory store to the local store
     with open(NETS_FILE_PATH, 'w') as file:
         writer = csv.writer(file)
         for address in addresses:
@@ -52,6 +47,7 @@ def add_host(host, port):
     return True
 
 
+# Remove a host from the local store
 def remove_host(host, port):
     # In-memory address store
     addresses = []
@@ -65,7 +61,7 @@ def remove_host(host, port):
             if not (host == current_host and port == current_port):
                 addresses.append(address)
 
-    # Write the in-memory story to the local store
+    # Write the in-memory store to the local store
     with open(NETS_FILE_PATH, 'w') as file:
         writer = csv.writer(file)
         for address in addresses:
@@ -74,3 +70,72 @@ def remove_host(host, port):
     # Done
     return True
 
+
+# Put a tuple in the tuple store
+def put_tuple(tupl):
+    # In-memory tuple store
+    tuples = []
+
+    # Read all the tuples in memory
+    with open(TUPLE_FILE_PATH, 'r') as file:
+        for t in csv.reader(file, delimiter=','):
+            tuples.append(t)
+
+    # Add the new tuple to in-memory store
+    tuples.append(tupl)
+
+    # Write the in-memory store to the local store
+    with open(TUPLE_FILE_PATH, 'w') as file:
+        writer = csv.writer(file)
+        for t in tuples:
+            writer.writerow(list(t))
+
+    # Done
+    return tupl
+
+
+def read_tuple(predicate):
+    # In-memory tuple store
+    tuples = []
+
+    # Read all the tuples in memory
+    with open(TUPLE_FILE_PATH, 'r') as file:
+        for line in [l.rstrip('\n') for l in file]:
+            tupl = ast.literal_eval(line)
+            tuples.append(tupl)
+
+    try:
+        # Look for a tuple that matches the predicate
+        result = next(t for t in tuples if predicate(t))
+        return result
+    except:
+        # If a tuple was not found, return None
+        return None
+
+
+# Remove a tuple from the tuple store
+def remove_tuple(predicate):
+    # In-memory tuple store
+    tuples = []
+
+    # Read all the tuples in memory
+    with open(TUPLE_FILE_PATH, 'r') as file:
+        for line in [ l.rstrip('\n') for l in file ]:
+            tupl = ast.literal_eval(line)
+            tuples.append(tupl)
+
+    try:
+        # Look for a tuple that matches the predicate
+        result = next(t for t in tuples if predicate(t))
+    except:
+        # If a tuple was not found, return None
+        return None
+
+    # A result was found, therefore do not include it back to the store
+    tuples.remove(result)
+
+    with open(TUPLE_FILE_PATH, 'w') as file:
+        for t in tuples:
+            file.write('{0}\n'.format(t))
+
+    return result
