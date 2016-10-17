@@ -18,28 +18,26 @@ def hash_tuple(tupl):
     m.update(str(tupl).encode('utf-8'))
     return int(m.hexdigest(), 16)
 
-# Linda API:
-#  - add host
-#  - remove host
-#  - put tuple
-#  - read tuple
-#  - remove tuple
 
 
+# Add a host
 def add_host(host, port):
     # Adding host simply adds a host to the local store
     return local_store.add_host(host, port)
 
 
+# Remove a host
 def remove_host(host, port):
     # Removing host simply removes a host from the local store
     return local_store.remove_host(host, port)
 
 
+# Put a tuple locally
 def put_tuple_locally(tupl):
     return local_store.put_tuple(tupl)
 
 
+# Put a tuple remotely
 def put_tuple_remotely(tupl, address):
     # First connect the store socket to the address
     store_socket.connect(address)
@@ -55,6 +53,7 @@ def put_tuple_remotely(tupl, address):
         return response.decode('utf-8')
 
 
+# Put a tuple
 def put_tuple(tupl):
     addresses = sorted(local_store.get_all_addresses(), key = itemgetter(0, 1))
     local_address = local_store.get_local_address()
@@ -114,6 +113,7 @@ def match_description_to_tuple(description, tupl):
         return False
 
 
+# Read a tuple remotely
 def read_tuple_remotely(description, address):
     # First connect the store socket to the address
     store_socket.connect(address)
@@ -129,10 +129,12 @@ def read_tuple_remotely(description, address):
         return response.decode('utf-8')
 
 
+# Read a tuple locally
 def read_tuple_locally(description):
     return local_store.read_tuple(lambda t: match_description_to_tuple(description, t))
 
 
+# Read a tuple
 def read_tuple(description):
     # First try locally
     t = read_tuple_locally(description)
@@ -153,6 +155,7 @@ def read_tuple(description):
         return None
 
 
+# Remove a tuple remotely
 def remove_tuple_remotely(description, address):
     # First connect the store socket to the address
     store_socket.connect(address)
@@ -168,10 +171,12 @@ def remove_tuple_remotely(description, address):
         return response.decode('utf-8')
 
 
+# Remove a tuple locally
 def remove_tuple_locally(description):
     return local_store.remove_tuple(lambda t: match_description_to_tuple(description, t))
 
 
+# Remove a tuple
 def remove_tuple(description):
     # First try locally
     t = remove_tuple_locally(description)
