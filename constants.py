@@ -1,6 +1,8 @@
 STUDENT_ID = '90849'
 
-LINDA_DIRECTORY = '/tmp/{0}/linda'.format(STUDENT_ID)
+STUDENT_DIRECTORY = '/tmp/{0}'.format(STUDENT_ID)
+
+LINDA_DIRECTORY = '{0}/linda'.format(STUDENT_DIRECTORY)
 
 NETS_FILE_PATH = '{0}/nets'.format(LINDA_DIRECTORY)
 
