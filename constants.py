@@ -1,0 +1,7 @@
+STUDENT_ID = '90849'
+
+LINDA_DIRECTORY = '/tmp/{0}/linda'.format(STUDENT_ID)
+
+NETS_FILE_PATH = '{0}/nets'.format(LINDA_DIRECTORY)
+
+TUPLE_FILE_PATH = '{0}/tuples'.format(LINDA_DIRECTORY)
