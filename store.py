@@ -90,12 +90,19 @@ def description_to_tuple_string(description):
 
 # Compare a tuple to a description
 def match_description_to_tuple(description, tupl):
+    print('Matching description to tuple')
+    print('Description: {0}'.format(description))
+    print('Tuple: {0}'.format(tupl))
     if len(description) == len(tupl):
         for i in range(len(description)):
             item = description[i]
             tuple_item = tupl[i]
+            print('Description Item: {0}'.format(item))
+            print('Tuple Item: {0}'.format(tuple_item))
 
             if item['type'] == 'value':
+                print('item[\'value\'] = {0}'.format(item['value']))
+                print('tuple_item = {0}'.format(tuple_item))
                 if not (item['value'] == tuple_item):
                     return False
 
@@ -111,6 +118,24 @@ def match_description_to_tuple(description, tupl):
 
     else:
         return False
+
+# import pytest
+# from pytest import list_of
+#
+#
+# @pytest.mark.randomize(l=list_of(int), ncalls=1000)
+# def test_match_description_to_tuple(l):
+#     t = tuple(l)
+#     description = [{'type': 'value', 'value': x} for x in l]
+#     assert(match_description_to_tuple(description, t))
+#
+#
+# @pytest.mark.randomize(l=list_of(int), ncalls=1000)
+# def test_match_description_to_tuple_variable(l):
+#     t = tuple(l)
+#     description = [{'type': 'variable', 'kind': x.__class__.__name__} for x in l]
+#     assert(match_description_to_tuple(description, t))
+
 
 
 # Read a tuple remotely

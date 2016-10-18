@@ -25,7 +25,7 @@ def evaluate(tree):
 
         tupl = tuple(tupl)
 
-        if tree['directive'] and tree['directive'] == 'exec':
+        if ('directive' in tree) and tree['directive'] == 'exec':
             return store.put_tuple_locally(tupl)
         else:
             return store.put_tuple(tupl)
@@ -33,7 +33,7 @@ def evaluate(tree):
     elif tree['command'] == 'rd':
         description = tree['args']
 
-        if tree['directive'] and tree['directive'] == 'exec':
+        if ('directive' in tree) and tree['directive'] == 'exec':
             return store.read_tuple_locally(description)
         else:
             return store.read_tuple(description)
@@ -41,7 +41,7 @@ def evaluate(tree):
     elif tree['command'] == 'in':
         description = tree['args']
 
-        if tree['directive'] and tree['directive'] == 'exec':
+        if ('directive' in tree) and tree['directive'] == 'exec':
             return store.remove_tuple_locally(description)
         else:
             return store.remove_tuple(description)
@@ -52,9 +52,12 @@ def evaluate(tree):
 
 
 def interpret(command):
+    print('Interpreting command: {0}'.format(command))
     try:
         tree = parser.parse(command)
+        print('Tree: {0}'.format(tree))
         return evaluate(tree)
 
-    except:
+    except Exception as e:
+        print('Error: {0}'.format(e))
         return None
