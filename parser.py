@@ -83,6 +83,10 @@ def p_optparams(p):
     p[0] = p[1]
 
 
+def p_optparams_singleton(p):
+    'optparams : value COMMA'
+    p[0] = [p[1]]
+
 def p_optparams_empty(p):
     'optparams : '
     p[0] = [ ]

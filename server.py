@@ -17,7 +17,6 @@ def run():
     # Create the local store
     local_store.create_local_store()
 
-
     # Create the server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -43,7 +42,6 @@ def run():
     # message_queues : { Socket : Queue }
     message_queues = {}
 
-
     def remove_socket(s):
         # Stop listening for input from the client
         if s in read_sockets:
@@ -59,18 +57,15 @@ def run():
         # Remove the message queue associated to this socket
         del message_queues[s]
 
-
     def process_command(command, client):
         print('Processing command: {0}'.format(command))
         response = str(interpreter.interpret(command))
         print('Response: {0}'.format(response))
         client.send(response.encode('utf-8'))
 
-
     def process_message(message, client):
         thread = threading.Thread(target = process_command, args = (message, client))
         thread.start()
-
 
     # Server loop
     # The server will always run here and never crash
