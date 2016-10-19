@@ -44,7 +44,7 @@ def t_INTEGER(token):
 
 
 def t_STRING(token):
-    r'\"(.+?)\"'
+    r'(\"(.+?)\")|(\'(.+?)\')'
     token.value = token.value[1:-1]
     return token
 
