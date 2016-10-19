@@ -92,7 +92,13 @@ def description_to_tuple_string(description):
 def match_description_to_tuple(description, tupl):
     print('Matching description to tuple')
     print('Description: {0}'.format(description))
+    print('Description Length: {0}'.format(len(description)))
     print('Tuple: {0}'.format(tupl))
+    print('Tuple Length: {0}'.format(len(tupl)))
+    if len(description) == len(tupl) == 0:
+        print('Description is empty')
+        return True
+
     if len(description) == len(tupl):
         for i in range(len(description)):
             item = description[i]
@@ -164,7 +170,7 @@ def read_tuple(description):
     # First try locally
     t = read_tuple_locally(description)
     # If none, loop through all the addresses and try remotely
-    if t:
+    if not t is None:
         return t
 
     else:
@@ -206,7 +212,7 @@ def remove_tuple(description):
     # First try locally
     t = remove_tuple_locally(description)
     # If none, loop through all the addresses and try remotely
-    if t:
+    if not t is None:
         return t
 
     else:

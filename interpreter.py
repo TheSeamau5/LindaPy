@@ -4,14 +4,18 @@ import store
 
 def evaluate(tree):
     if tree['command'] == 'add':
-        host = tree['args']['host']
-        port = tree['args']['port']
-        return store.add_host(host, port)
+        for arg in tree['args']:
+            host = arg['host']
+            port = arg['port']
+            store.add_host(host, port)
+        return None
 
     elif tree['command'] == 'remove':
-        host = tree['args']['host']
-        port = tree['args']['port']
-        return store.remove_host(host, port)
+        for arg in tree['args']:
+            host = arg['host']
+            port = arg['port']
+            store.remove_host(host, port)
+        return None
 
     elif tree['command'] == 'out':
         # Convert description to tuple

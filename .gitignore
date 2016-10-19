@@ -4,3 +4,6 @@ __pycache__/
 parser.out
 parsetab.py
 .cache/
+Linda.egg-info/
+build/
+dist/

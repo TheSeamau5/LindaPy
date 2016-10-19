@@ -28,16 +28,19 @@ def create_local_store():
 
 # Add a host to the local store
 def add_host(host, port):
+    print('Adding host {0} port: {1}'.format(host, port))
     # In-memory address store
     addresses = []
 
     # Read all the addresses in memory
     with open(NETS_FILE_PATH, 'r') as file:
         for address in csv.reader(file, delimiter=','):
-            addresses.append(address)
+            addresses.append(tuple(address))
 
+    print('Addresses before: {0}'.format(addresses))
     # Add the new address to in-memory store
     addresses.append((host, port))
+    print('Addresses after: {0}'.format(addresses))
 
     # Write the in-memory store to the local store
     with open(NETS_FILE_PATH, 'w') as file:
@@ -58,7 +61,7 @@ def set_local_host(host, port):
     # Read all the addresses in memory
     with open(NETS_FILE_PATH, 'r') as file:
         for address in csv.reader(file, delimiter=','):
-            addresses.append(address)
+            addresses.append(tuple(address))
 
     if len(addresses) > 0:
         addresses[0] = (host, port)
@@ -88,7 +91,7 @@ def remove_host(host, port):
 
             # Only read addresses that are not the current host and port
             if not (host == current_host and port == current_port):
-                addresses.append(address)
+                addresses.append(tuple(address))
 
     # Write the in-memory store to the local store
     with open(NETS_FILE_PATH, 'w') as file:
@@ -146,19 +149,22 @@ def put_tuple(tupl):
 def read_tuple(predicate):
     # In-memory tuple store
     tuples = []
-
+    print('Read tuple')
     # Read all the tuples in memory
     with open(TUPLE_FILE_PATH, 'r') as file:
         for line in [l.rstrip('\n') for l in file]:
             tupl = ast.literal_eval(line)
             tuples.append(tupl)
 
+    print('Tuples: {0}'.format(tuples))
     try:
         # Look for a tuple that matches the predicate
         result = next(t for t in tuples if predicate(t))
+        print('Match: {0}'.format(result))
         return result
     except:
         # If a tuple was not found, return None
+        print('No match found')
         return None
 
 
