@@ -109,6 +109,39 @@ def _get_index_dict_for_remove_item(item, d):
     return result
 
 
+# def generate_replica_table(table):
+#     descriptive_table = [
+#         {
+#             'item': table[i],
+#             'index': i,
+#             'replica': None,
+#             'available': True
+#
+#         } for i in range(len(table))
+#     ]
+#
+#     n = len(table)
+#     for i in range(n):
+#         x = descriptive_table[i]
+#         for j in range(n):
+#             k = (i + j) % n
+#             y = descriptive_table[k]
+#             if not (x['item'] == y['item']) and y['available'] is True:
+#                 x['replica'] = y['index']
+#                 y['available'] = False
+#                 break
+#
+#     return [(x['index'], x['replica']) for x in descriptive_table]
+#
+#
+# def get_replica(index, table):
+#     try:
+#         result = next(x[1] for x in generate_replica_table(table) if x[0] == index)
+#         return result
+#     except:
+#         return None
+
+
 def generate_replica_table(table):
     descriptive_table = [
         {
@@ -131,15 +164,7 @@ def generate_replica_table(table):
                 y['available'] = False
                 break
 
-    return [(x['index'], x['replica']) for x in descriptive_table]
-
-
-def get_replica(index, table):
-    try:
-        result = next(x[1] for x in generate_replica_table(table) if x[0] == index)
-        return result
-    except:
-        return None
+    return [((x['index'], x['item']), (x['replica'], table[x['replica']])) for x in descriptive_table]
 
 
 def remove_item(item, table):
@@ -159,9 +184,52 @@ def remove_item(item, table):
 
 def add_item(item, table):
     new_table = list(table)
-    if not item in table:
+    if item not in table:
         new_indices = _get_indices_for_new_item(table)
         for i in new_indices:
             new_table[i] = item
     return new_table
 
+
+def diff(table1, table2):
+    diffs = []
+    n = len(table1)
+    if n == len(table2):
+        replica_table1 = generate_replica_table(table1)
+        replica_table2 = generate_replica_table(table2)
+
+        for i in range(n):
+            ((source_index1, source_value1), (backup_index1, backup_value1)) = replica_table1[i]
+            ((source_index2, source_value2), (backup_index2, backup_value2)) = replica_table2[i]
+
+            if i == source_index1 == source_index2:
+                # We consider there to be a change if either:
+                #       - source_value has changed
+                #       - backup_value has changed
+                if (not source_value1 == source_value2) or (not backup_value1 == backup_value2):
+                    diffs.append((replica_table1[i], replica_table2[i]))
+
+    return diffs
+
+
+# Find which data to send to where given an item
+def get_changes_for_item(item, diffs):
+    changes = []
+
+    for diff in diffs:
+        replica1, replica2 = diff
+
+        ((source_index1, source_value1), (backup_index1, backup_value1)) = replica1
+        ((source_index2, source_value2), (backup_index2, backup_value2)) = replica2
+
+        if source_value1 == item:
+            if not source_value2 == item:
+                changes.append((source_index1, source_value2))
+                continue
+
+        if backup_value1 == item:
+            if not backup_value2 == item:
+                changes.append((backup_index1, backup_value2))
+                continue
+
+    return changes
