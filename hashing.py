@@ -73,7 +73,7 @@ def _get_indices_for_new_item(table):
 def split_into_chunks(l, k):
     n = len(l)
     if n == 0 or k <= 1:
-        return l
+        return [l]
 
     chunks = []
     current_chunk = []
@@ -95,52 +95,26 @@ def split_into_chunks(l, k):
 
 
 def _get_index_dict_for_remove_item(item, d):
+    # print('Dict:')
+    # print(d)
+    # print('Item: {0}'.format(item))
     result = {}
     sorted_kv_list = sorted([(k, v) for k, v in d.items() if not k == item], key=lambda kv: len(kv[1]))
     keys = [k for k, v in sorted_kv_list if not k == item]
-
+    # print('Keys: {0}'.format(keys))
     num_keys = len(keys)
     indices = d[item]
     num_chunks = max(1, min(num_keys, len(indices) - 1))
     chunks = split_into_chunks(indices, num_chunks)
-
+    # print('Chunks:')
+    # print(chunks)
     for i in range(len(chunks)):
+        # print('i: '.format(i))
+        # print('Key i: {0}'.format(keys[i]))
+        # print('Chunk i: {0}'.format(chunks[i]))
         result[keys[i]] = chunks[i]
 
     return result
-
-
-# def generate_replica_table(table):
-#     descriptive_table = [
-#         {
-#             'item': table[i],
-#             'index': i,
-#             'replica': None,
-#             'available': True
-#
-#         } for i in range(len(table))
-#     ]
-#
-#     n = len(table)
-#     for i in range(n):
-#         x = descriptive_table[i]
-#         for j in range(n):
-#             k = (i + j) % n
-#             y = descriptive_table[k]
-#             if not (x['item'] == y['item']) and y['available'] is True:
-#                 x['replica'] = y['index']
-#                 y['available'] = False
-#                 break
-#
-#     return [(x['index'], x['replica']) for x in descriptive_table]
-#
-#
-# def get_replica(index, table):
-#     try:
-#         result = next(x[1] for x in generate_replica_table(table) if x[0] == index)
-#         return result
-#     except:
-#         return None
 
 
 def generate_replica_table(table):
@@ -236,7 +210,7 @@ def get_changes_for_item(item, diffs):
 
         if backup_value1 == item:
             if not backup_value2 == item:
-                changes.append((backup_index1, backup_value2))
+                changes.append((source_index1, backup_value2))
                 continue
 
-    return changes
+    return list(set(changes))
