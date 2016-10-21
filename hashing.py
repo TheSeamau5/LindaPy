@@ -12,9 +12,10 @@ def generate_consistent_hasher(n=1024):
 
     return generate_table
 
-
+n = 8
+#n = 1024
 # Consistent hash function
-consistent_hash = generate_consistent_hasher(1024)
+consistent_hash = generate_consistent_hasher(n)
 
 
 # Find the indices that have changed between two lists
@@ -24,7 +25,7 @@ def diff_indices(l1, l2):
 
 
 # Get the number of different items in a table
-def _get_num_items(table):
+def get_num_items(table):
     return len(set(table))
 
 
@@ -52,7 +53,7 @@ def convert_to_list(d):
 
 def _get_indices_for_new_item(table):
     d = convert_to_dict(table)
-    num_items = _get_num_items(table)
+    num_items = get_num_items(table)
     total = len(table)
     n = round(total / (num_items + 1))
     l = [(k, v) for k, v in d.items()]
@@ -164,7 +165,13 @@ def generate_replica_table(table):
                 y['available'] = False
                 break
 
-    return [((x['index'], x['item']), (x['replica'], table[x['replica']])) for x in descriptive_table]
+    def _get_replica(x):
+        if x['replica'] is None:
+            return (x['index'], x['item']), (None, None)
+        else:
+            return (x['index'], x['item']), (x['replica'], table[x['replica']])
+
+    return [_get_replica(x) for x in descriptive_table]
 
 
 def remove_item(item, table):
