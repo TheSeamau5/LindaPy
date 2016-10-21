@@ -104,7 +104,7 @@ def _get_index_dict_for_remove_item(item, d):
     # print('Keys: {0}'.format(keys))
     num_keys = len(keys)
     indices = d[item]
-    num_chunks = max(1, min(num_keys, len(indices) - 1))
+    num_chunks = max(1, min(num_keys, len(indices)))
     chunks = split_into_chunks(indices, num_chunks)
     # print('Chunks:')
     # print(chunks)
