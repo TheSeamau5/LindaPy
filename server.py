@@ -5,8 +5,8 @@ import uuid
 
 from queue import Queue, Empty
 
-from nets_store import *
-from tuple_store import *
+
+from store import Store
 from interpreter import *
 
 
@@ -22,10 +22,6 @@ class Server:
         self.session_name = session_name
         print('Starting new session with name: {0}'.format(self.session_name))
 
-        # Start Tuple Store
-        tuple_store = TupleStore(self.session_name)
-
-
         # Get the local IP address by making a bogus socket connection
         dgram_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         dgram_socket.connect(('8.8.8.8', 53))
@@ -40,11 +36,11 @@ class Server:
 
         self.local_address = (host, port)
 
-        # Start Nets Store
-        nets_store = NetsStore(self.session_name, self.local_address)
+        # Create store
+        store = Store(self.session_name, self.local_address)
 
         # Set interpreter
-        self.interpreter = Interpreter(nets_store, tuple_store)
+        self.interpreter = Interpreter(store)
 
         print('Starting server on {0} port: {1}'.format(host, port))
 
