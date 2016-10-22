@@ -80,6 +80,13 @@ class Store:
         self.nets_store = NetsStore(session_name, local_address)
         self.tuple_store = TupleStore(session_name)
 
+    # Send tuples(that hash to a given slot) to some address
+    def send_tuples(self, slot, address):
+        tuples = self.tuple_store.read_all(lambda t: hash_tuple(t) == slot)
+        for t in tuples:
+            self._insert_remote(t, address)
+
+
     def _insert_remote(self, t, address):
         sock = socket.create_connection(address)
         message = "[exec] out{0}".format(t)
