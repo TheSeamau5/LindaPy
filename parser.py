@@ -138,15 +138,3 @@ def parse(input_string):
     _lexer.input(input_string)
     parse_tree = parser.parse(input_string, lexer=_lexer)
     return parse_tree
-
-
-# s1 = 'rd("Hello", 23)'
-# s2 = 'out(?x:int, ?y:float)'
-# s3 = 'in(?x:int, "hello", 2, 4.5)'
-# s4 = '[exec] rd("Hello", ?x:int)'
-# s5 = '[exec] out()'
-# s6 = 'rd("Hello, world!")'
-#
-# for s in [s1, s2, s3, s4, s5, s6]:
-#     print(s)
-#     print(parse(s))

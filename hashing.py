@@ -1,5 +1,5 @@
 # Consistent Hashing Implementation
-
+import hashlib
 
 # Function to generate a hash table generator
 # n : number of slots (default = 1024)
@@ -16,6 +16,12 @@ n = 8
 #n = 1024
 # Consistent hash function
 consistent_hash = generate_consistent_hasher(n)
+
+
+def hash_tuple(t):
+    m = hashlib.md5()
+    m.update(str(t).encode('utf-8'))
+    return int(m.hexdigest(), 16) % n
 
 
 # Find the indices that have changed between two lists

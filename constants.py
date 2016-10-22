@@ -1,9 +1,16 @@
 STUDENT_ID = '90849'
-
 STUDENT_DIRECTORY = '/tmp/{0}'.format(STUDENT_ID)
 
-LINDA_DIRECTORY = '{0}/linda'.format(STUDENT_DIRECTORY)
 
-NETS_FILE_PATH = '{0}/nets'.format(LINDA_DIRECTORY)
-
-TUPLE_FILE_PATH = '{0}/tuples'.format(LINDA_DIRECTORY)
+def generate_file_paths(name):
+    machine_directory = '{0}/{1}'.format(STUDENT_DIRECTORY, name)
+    linda_directory = '{0}/linda'.format(machine_directory)
+    nets_file_path = '{0}/nets'.format(linda_directory)
+    tuples_file_path = '{0}/tuples'.format(linda_directory)
+    return {
+        'STUDENT_DIRECTORY': STUDENT_DIRECTORY,
+        'MACHINE_DIRECTORY': machine_directory,
+        'LINDA_DIRECTORY': linda_directory,
+        'NETS_FILE_PATH': nets_file_path,
+        'TUPLES_FILE_PATH': tuples_file_path
+    }
