@@ -80,6 +80,26 @@ class Store:
         self.nets_store = NetsStore(session_name, local_address)
         self.tuple_store = TupleStore(session_name)
 
+    def _insert_remote(self, t, address):
+        sock = socket.create_connection(address)
+        message = "[exec] out{0}".format(t)
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    def insert(self, t):
+        slot = hash_tuple(t)
+        address = self.nets_store.table[slot]
+
+        if address == self.nets_store.local:
+            return self.tuple_store.insert(t)
+        else:
+            return self._insert_remote(t, address)
+
     def _read_remote(self, description, address):
         sock = socket.create_connection(address)
         t_str = _description_to_tuple_string(description)
@@ -125,5 +145,50 @@ class Store:
                 else:
                     return self._read_remote(description, address)
 
-    
+    def _remove_remote(self, description, address):
+        sock = socket.create_connection(address)
+        t_str = _description_to_tuple_string(description)
+        message = "[exec] in{0}".format(t_str)
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    def remove(self, description, local=True):
+        if local:
+            predicate = _create_predicate(description)
+            return self.tuple_store.remove(predicate)
+        else:
+            if _has_variable(description):
+                # If there is a variable in the description
+                # We simply have to broadcast the query
+                addresses = self.nets_store.get_addresses()
+                for address in addresses:
+                    if address == self.nets_store.local:
+                        predicate = _create_predicate(description)
+                        t = self.tuple_store.remove(predicate)
+                    else:
+                        t = self._remove_remote(description, address)
+
+                    if t is not None:
+                        return t
+
+                return None
+
+            else:
+                # Else, we have to hash the tuple and
+                # Query the appropriate address
+                query_tuple = tuple([x['value'] for x in description])
+                slot = hash_tuple(query_tuple)
+                address = self.nets_store.table[slot]
+
+                if address == self.nets_store.local:
+                    return self.tuple_store.remove(lambda t: t == query_tuple)
+                else:
+                    return self._remove_remote(description, address)
+
+
 
