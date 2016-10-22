@@ -80,9 +80,89 @@ class Store:
         self.nets_store = NetsStore(session_name, local_address)
         self.tuple_store = TupleStore(session_name)
 
+
+    # add host port [ ]
+    # Triggered when received "[exec] add address.host address.port"
+    def add_host(self, address):
+        changes = self.nets_store.add(address)
+        # resolve changes
+        self._resolve_changes(changes)
+
+    def _send_exec_add_host(self, address, remote_address):
+        sock = socket.create_connection(remote_address)
+        host, port = address
+        message = "[exec] add {0} {1}".format(host, port)
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+
+    # Request to join
+    # Triggered when received "add B.host B.port"
+    def request_to_join(self, address):
+        sock = socket.create_connection(address)
+        host, port = self.nets_store.local
+        message = "[join] add {0} {1}".format(host, port)
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    # resolve request to join from some server [ ]
+    # Triggered when received "[join] add B.host B.port"
+    def resolve_request_to_join(self, address):
+        # 1. Get list of all remote addresses
+        remote_addresses = self.nets_store.get_remote_addresses()
+
+        # 2. Send "[exec] add B.host B.port"
+        for remote_address in remote_addresses:
+            self._send_exec_add_host(address, remote_address)
+
+        # 3. Add address to the nets store and get changes
+        changes = self.nets_store.add(address)
+
+        # 4. Dump new table on new address
+        self._send_table_dump(address)
+
+        # 5. Resolve changes
+        self._resolve_changes(changes)
+
+
+    # send table [x]
+    def _send_table_dump(self, address):
+        command = '[dump] add {0}'.format(' '.join(['{0} {1}'.format(x[0], x[1]) for x in self.nets_store.table]))
+        sock = socket.create_connection(address)
+        sock.send(command.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+
+    # dump table [x]
+    # Triggered when received "[dump] add A.host A.port B.host B.port ..."
+    def dump_table(self, table):
+        self.nets_store.dump(table)
+
+
+    # resolve changes [ ]
+    def _resolve_changes(self, changes):
+        for change in changes:
+            slot, remote_address = change
+            self.send_tuples(slot, remote_address)
+
     # Send tuples(that hash to a given slot) to some address
     def send_tuples(self, slot, address):
-        tuples = self.tuple_store.read_all(lambda t: hash_tuple(t) == slot)
+        tuples = self.tuple_store.remove_all(lambda t: hash_tuple(t) == slot)
         for t in tuples:
             self._insert_remote(t, address)
 

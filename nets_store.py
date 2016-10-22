@@ -43,6 +43,12 @@ class NetsStore:
         self.persist_to_disk()
         return changes
 
+    # Just the dump the new table (overwriting everything)
+    # Do not pay attention to changes
+    def dump(self, table):
+        self.table = table
+        self.persist_to_disk()
+
     # Remove an address and return the changes
     def remove(self, address):
         old_table = list(self.table)
@@ -56,6 +62,10 @@ class NetsStore:
     # Get a list of all the addresses
     def get_addresses(self):
         return list(set(self.table))
+
+    # Get a list of all the remote addresses
+    def get_remote_addresses(self):
+        return [x for x in self.get_addresses() if not x == self.local]
 
     def update_local(self, address):
         def _set_address(x):

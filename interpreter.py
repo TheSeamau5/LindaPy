@@ -17,10 +17,31 @@ class Interpreter:
         self.store = store
 
     def evaluate(self, tree):
-        # if tree['command'] == 'add':
-        #     for arg in tree['args']:
-        #         address = (arg['host'], arg['port'])
-        #         return self.nets_store.add(address)
+        if tree['command'] == 'add':
+            # [join] B.host B.port
+            if 'directive' in tree and tree['directive'] == 'join':
+                for arg in tree['args']:
+                    address = (arg['host'], arg['port'])
+                    return self.store.resolve_request_to_join(address)
+
+            elif 'directive' in tree and tree['directive'] == 'exec':
+                for arg in tree['args']:
+                    address = (arg['host'], arg['port'])
+                    return self.store.add_host(address)
+
+            elif 'directive' in tree and tree['directive'] == 'dump':
+                table = []
+                for arg in tree['args']:
+                    address = (arg['host'], arg['port'])
+                    table.append(address)
+                return self.store.dump_table(table)
+
+            # Normal case:
+            else:
+                for arg in tree['args']:
+                    address = (arg['host'], arg['port'])
+                    return self.store.request_to_join(address)
+
 
         # elif tree['command'] == 'remove':
         #     for arg in tree['args']:
