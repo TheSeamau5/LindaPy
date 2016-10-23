@@ -87,6 +87,7 @@ class Store:
         changes = self.nets_store.add(address)
         # resolve changes
         self._resolve_changes(changes)
+        return None
 
     def _send_exec_add_host(self, address, remote_address):
         sock = socket.create_connection(remote_address)
@@ -104,9 +105,11 @@ class Store:
     # Request to join
     # Triggered when received "add B.host B.port"
     def request_to_join(self, address):
+        print('Requesting to join: {0}'.format(address))
         sock = socket.create_connection(address)
         host, port = self.nets_store.local
         message = "[join] add {0} {1}".format(host, port)
+        print('Sending request with message: {0}'.format(message))
         sock.send(message.encode('utf-8'))
         response = sock.recv(1024)
         sock.close()
@@ -118,40 +121,59 @@ class Store:
     # resolve request to join from some server [ ]
     # Triggered when received "[join] add B.host B.port"
     def resolve_request_to_join(self, address):
+        print('Received request to join from: {0}'.format(address))
         # 1. Get list of all remote addresses
         remote_addresses = self.nets_store.get_remote_addresses()
 
+        print('Broadcasting new addition to all addresses')
         # 2. Send "[exec] add B.host B.port"
         for remote_address in remote_addresses:
             self._send_exec_add_host(address, remote_address)
 
+        print('Add the new address to the store')
         # 3. Add address to the nets store and get changes
         changes = self.nets_store.add(address)
+        print('Get changes: {0}'.format(changes))
 
+        print('Send table dump to new address')
         # 4. Dump new table on new address
-        self._send_table_dump(address)
+        command = self._send_table_dump(address)
 
+        print('Resolve changes')
         # 5. Resolve changes
         self._resolve_changes(changes)
+
+        print('Resolved request to join')
+        return command
 
 
     # send table [x]
     def _send_table_dump(self, address):
+        print('Forming command')
         command = '[dump] add {0}'.format(' '.join(['{0} {1}'.format(x[0], x[1]) for x in self.nets_store.table]))
-        sock = socket.create_connection(address)
-        sock.send(command.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return command
+        # print('Creating socket connection')
+        # sock = socket.create_connection(address)
+        # print('Socket connection created')
+        # print('Sending command')
+        # sock.send(command.encode('utf-8'))
+        # print('Command send and waiting for response')
+        # #response = sock.recv(1024)
+        # print('Response received')
+        # print('Closing socket')
+        # sock.close()
+        # # print('Socket closed')
+        # # if not response:
+        # #     return None
+        # # else:
+        # #     return response.decode('utf-8')
 
 
     # dump table [x]
     # Triggered when received "[dump] add A.host A.port B.host B.port ..."
     def dump_table(self, table):
         self.nets_store.dump(table)
+        return None
 
 
     # resolve changes [ ]

@@ -75,8 +75,14 @@ class Server:
 
     def _process_command(self, command, client):
         print('Processing command: {0}'.format(command))
-        response = str(self.interpreter.interpret(command))
-        client.send(response.encode('utf-8'))
+
+        def respond(response):
+            client.send(str(response).encode('utf-8'))
+
+        self.interpreter.interpret(command, respond)
+
+        #response = str(self.interpreter.interpret(command))
+        #client.send(response.encode('utf-8'))
 
     def _process_message(self, message, client):
         thread = threading.Thread(target=self._process_command, args=(message, client))
