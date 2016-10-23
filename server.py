@@ -48,7 +48,7 @@ class Server:
 
         if session_name is MISSING:
             # If no session_name, we create a new one from a uuid and create a new session
-            self.session_name = session_name
+            self.session_name = uuid.uuid4().hex
             print('Starting new session with name: {0}'.format(self.session_name))
 
             self._initialize_new_session()

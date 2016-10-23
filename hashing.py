@@ -1,6 +1,7 @@
 # Consistent Hashing Implementation
 import hashlib
 
+
 # Function to generate a hash table generator
 # n : number of slots (default = 1024)
 def generate_consistent_hasher(n=1024):
@@ -13,7 +14,7 @@ def generate_consistent_hasher(n=1024):
     return generate_table
 
 n = 8
-#n = 1024
+# n = 1024
 # Consistent hash function
 consistent_hash = generate_consistent_hasher(n)
 
@@ -53,7 +54,7 @@ def convert_to_list(d):
     for item, indices in d.items():
         for index in indices:
             l.append((index, item))
-    sorted_l = sorted(l, key = lambda item: item[0])
+    sorted_l = sorted(l, key=lambda item: item[0])
     return [x[1] for x in sorted_l]
 
 
@@ -152,6 +153,15 @@ def generate_replica_table(table):
             return (x['index'], x['item']), (x['replica'], table[x['replica']])
 
     return [_get_replica(x) for x in descriptive_table]
+
+
+def get_replica_slot(slot, table):
+    try:
+        rt = generate_replica_table(table)
+        result = next(x[1][0] for x in rt if x[0][0] == slot)
+        return result
+    except:
+        return None
 
 
 def remove_item(item, table):

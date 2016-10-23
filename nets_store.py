@@ -35,7 +35,6 @@ class NetsStore:
         else:
             self.load_from_disk()
 
-
     # Add an address and return the changes
     def add(self, address):
         old_table = list(self.table)
@@ -69,6 +68,15 @@ class NetsStore:
     # Get a list of all the remote addresses
     def get_remote_addresses(self):
         return [x for x in self.get_addresses() if not x == self.local]
+
+    # Get the backup given a slot
+    def get_backup(self, slot):
+        return hashing.get_replica_slot(slot, self.table)
+        # backup_slot = hashing.get_replica_slot(slot, self.table)
+        # if backup_slot is None:
+        #     return None
+        # else:
+        #     return backup_slot, self.table[backup_slot]
 
     def update_address(self, old_address, new_address):
         if old_address == self.local:

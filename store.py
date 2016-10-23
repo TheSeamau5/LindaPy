@@ -1,4 +1,5 @@
 import socket
+import zlib
 
 from nets_store import *
 from tuple_store import *
@@ -81,6 +82,46 @@ class Store:
         self.nets_store = NetsStore(session_name, local_address)
         self.tuple_store = TupleStore(session_name)
 
+    def _send_receive_to_address(self, message, address):
+        # 1. Encode message to utf-8
+        encoded_message = message.encode('utf-8')
+
+        # 2. Compress message
+        compressed_message = zlib.compress(encoded_message)
+
+        # 3. Create connection to address
+        sock = socket.create_connection(address, timeout=10)
+
+        # 4. Send message to address
+        sock.send(encoded_message)  # TODO: Send compressed message instead
+
+        # 5. decode/decompress response and return it
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    # Method to send/receive message to slot
+    def _send_receive(self, message, slot, send_to_backup=False):
+        address = self.nets_store.table[slot]
+        try:
+            result = self._send_receive_to_address(message, address)
+            return result
+
+        except socket.timeout:
+            result = None
+            if send_to_backup:
+                # Get the backup
+                backup = self.nets_store.get_backup(slot)
+                if backup is not None:
+                    # Send the message to the backup
+                    result = self._send_receive(message, backup, send_to_backup=False)
+
+            self.remove_host(address, local=False)
+
+            return result
 
     # add host port [x]
     # Triggered when received "[exec] add address.host address.port"
@@ -91,28 +132,14 @@ class Store:
         return respond('Host {0} added'.format(address))
 
     def _send_exec_add_host(self, address, remote_address):
-        sock = socket.create_connection(remote_address)
         host, port = address
         message = "[exec] add {0} {1}".format(host, port)
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, remote_address)
 
     def _send_exec_remove_host(self, address, remote_address):
-        sock = socket.create_connection(remote_address)
         host, port = address
         message = "[exec] remove {0} {1}".format(host, port)
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, remote_address)
 
     def remove_host(self, address, local=True):
         changes = self.nets_store.remove(address)
@@ -126,15 +153,8 @@ class Store:
         return 'Host {0} removed'.format(address)
 
     def _send_update_address(self, old_address, new_address, remote_address):
-        sock = socket.create_connection(remote_address)
         message = "update {0} {1} {2} {3}".format(old_address[0], old_address[1], new_address[0], new_address[1])
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, remote_address)
 
     def update_address(self, old_address, new_address, local=True):
         self.nets_store.update_address(old_address, new_address)
@@ -150,18 +170,9 @@ class Store:
     # Request to join
     # Triggered when received "add B.host B.port"
     def request_to_join(self, address):
-        print('Requesting to join: {0}'.format(address))
-        sock = socket.create_connection(address)
         host, port = self.nets_store.local
         message = "[join] add {0} {1}".format(host, port)
-        print('Sending request with message: {0}'.format(message))
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, address)
 
     # resolve request to join from some server [ ]
     # Triggered when received "[join] add B.host B.port"
@@ -197,25 +208,8 @@ class Store:
 
     # send table [x]
     def _send_table_dump(self, address):
-        print('Forming command')
         command = '[dump] add {0}'.format(' '.join(['{0} {1}'.format(x[0], x[1]) for x in self.nets_store.table]))
-        # return command
-        print('Creating socket connection')
-        sock = socket.create_connection(address)
-        print('Socket connection created')
-        print('Sending command')
-        sock.send(command.encode('utf-8'))
-        print('Command send and waiting for response')
-        response = sock.recv(1024)
-        print('Response received')
-        print('Closing socket')
-        sock.close()
-        print('Socket closed')
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
-
+        return self._send_receive_to_address(command, address)
 
     # dump table [x]
     # Triggered when received "[dump] add A.host A.port B.host B.port ..."
@@ -236,17 +230,9 @@ class Store:
         for t in tuples:
             self._insert_remote(t, address)
 
-
     def _insert_remote(self, t, address):
-        sock = socket.create_connection(address)
         message = "[exec] out{0}".format(t)
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, address)
 
     def insert(self, t):
         slot = hash_tuple(t)
@@ -258,16 +244,9 @@ class Store:
             return self._insert_remote(t, address)
 
     def _read_remote(self, description, address):
-        sock = socket.create_connection(address)
         t_str = _description_to_tuple_string(description)
         message = "[exec] rd{0}".format(t_str)
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, address)
 
     def read(self, description, local=True):
         if local:
@@ -303,16 +282,9 @@ class Store:
                     return self._read_remote(description, address)
 
     def _remove_remote(self, description, address):
-        sock = socket.create_connection(address)
         t_str = _description_to_tuple_string(description)
         message = "[exec] in{0}".format(t_str)
-        sock.send(message.encode('utf-8'))
-        response = sock.recv(1024)
-        sock.close()
-        if not response:
-            return None
-        else:
-            return response.decode('utf-8')
+        return self._send_receive_to_address(message, address)
 
     def remove(self, description, local=True):
         if local:
