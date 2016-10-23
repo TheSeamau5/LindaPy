@@ -1,3 +1,4 @@
+import ast
 import os
 
 import constants
@@ -28,6 +29,9 @@ class TupleStore:
         if not os.path.exists(tuples_file_path):
             open(tuples_file_path, 'w+')
             os.chmod(tuples_file_path, 0o0666)
+        else:
+            self.load_from_disk()
+
 
     def insert(self, t):
         self.tuples.append(t)
@@ -63,3 +67,14 @@ class TupleStore:
         with open(tuples_file_path, 'w') as file:
             for t in self.tuples:
                 file.write('{0}\n'.format(t))
+
+    def load_from_disk(self):
+        tuples_file_path = self.file_paths['TUPLES_FILE_PATH']
+        tuples = []
+
+        with open(tuples_file_path, 'r') as file:
+            for line in [l.rstrip('\n') for l in file]:
+                t = ast.literal_eval(line)
+                tuples.append(t)
+
+        self.tuples = tuples

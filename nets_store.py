@@ -32,6 +32,9 @@ class NetsStore:
         if not os.path.exists(nets_file_path):
             open(nets_file_path, 'w+')
             os.chmod(nets_file_path, 0o0666)
+        else:
+            self.load_from_disk()
+
 
     # Add an address and return the changes
     def add(self, address):
@@ -67,6 +70,19 @@ class NetsStore:
     def get_remote_addresses(self):
         return [x for x in self.get_addresses() if not x == self.local]
 
+    def update_address(self, old_address, new_address):
+        if old_address == self.local:
+            self.update_local(new_address)
+        else:
+            def _set_address(x):
+                if x == old_address:
+                    return new_address
+                else:
+                    return x
+
+            self.table = [_set_address(x) for x in self.table]
+            self.persist_to_disk()
+
     def update_local(self, address):
         def _set_address(x):
             if x == self.local:
@@ -86,3 +102,16 @@ class NetsStore:
             # Then we just write each address in the table
             for address in self.table:
                 writer.writerow(list(address))
+
+    def load_from_disk(self):
+        nets_file_path = self.file_paths['NETS_FILE_PATH']
+        local = None
+        table = []
+        with open(nets_file_path, 'r') as file:
+            for (host, port) in csv.reader(file, delimiter=','):
+                if local is None:
+                    local = (host, int(port))
+                else:
+                    table.append((host, int(port)))
+        self.local = local
+        self.table = table

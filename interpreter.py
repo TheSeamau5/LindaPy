@@ -31,7 +31,7 @@ class Interpreter:
                 for arg in tree['args']:
                     address = (arg['host'], arg['port'])
                     self.store.add_host(address, respond)
-                    return respond(None)
+                    return None
 
             elif 'directive' in tree and tree['directive'] == 'dump':
                 print('This is a dump add')
@@ -50,13 +50,19 @@ class Interpreter:
                     self.store.request_to_join(address)
                     return respond(None)
 
-
         # elif tree['command'] == 'remove':
         #     for arg in tree['args']:
         #         address = (arg['host'], arg['port'])
         #         return self.nets_store.remove(address)
 
-        if tree['command'] == 'out':
+        elif tree['command'] == 'remove':
+            # [exec] remove B.host B.port
+            local = 'directive' in tree and tree['directive'] == 'exec'
+            for arg in tree['args']:
+                address = (arg['host'], arg['port'])
+                return respond(self.store.remove_host(address, local))
+
+        elif tree['command'] == 'out':
             t = []
 
             for item in tree['args']:

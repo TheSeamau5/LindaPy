@@ -1,3 +1,4 @@
+import csv
 import select
 import socket
 import threading
@@ -5,24 +6,61 @@ import uuid
 
 from queue import Queue, Empty
 
-
+import constants
 from store import Store
 from interpreter import *
 
 
+MISSING = object()
+
+
 class Server:
     # state:
+    #   - session_name
     #   - socket
     #   - local_address
+    #   - interpreter
     #   - read_sockets
     #   - write_sockets
     #   - message_queues
-    def __init__(self, session_name=uuid.uuid4().hex):
-        # Set session name
+    def __init__(self, session_name=MISSING):
+        # Initialize properties
         self.session_name = session_name
-        print('Starting new session with name: {0}'.format(self.session_name))
 
-        # Get the local IP address by making a bogus socket connection
+        # Server socket
+        self.socket = None
+
+        # Local address of server
+        self.local_address = None
+
+        # Interpreter to interpret incoming commands
+        self.interpreter = None
+
+        # Sockets from which we expect to read
+        self.read_sockets = []
+
+        # Sockets to which we expect to write
+        self.write_sockets = []
+
+        # Outgoing message queues for each socket
+        # message_queues : { Socket : Queue }
+        self.message_queues = {}
+
+        if session_name is MISSING:
+            # If no session_name, we create a new one from a uuid and create a new session
+            self.session_name = session_name
+            print('Starting new session with name: {0}'.format(self.session_name))
+
+            self._initialize_new_session()
+        else:
+            # Else, we have a session name and we restore with the given session name
+            self._restore_session()
+
+        # Run server
+        self.run()
+
+    def _initialize_new_session(self):
+        #Get the local IP address by making a bogus socket connection
         dgram_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         dgram_socket.connect(('8.8.8.8', 53))
         host = dgram_socket.getsockname()[0]
@@ -57,7 +95,23 @@ class Server:
         # message_queues : { Socket : Queue }
         self.message_queues = {}
 
-        self.run()
+    def _get_server_address(self):
+        file_paths = constants.generate_file_paths(self.session_name)
+        nets_file_path = file_paths['NETS_FILE_PATH']
+        with open(nets_file_path, 'r') as file:
+            for (host, port) in csv.reader(file, delimiter=','):
+                return host, int(port)
+
+    def _restore_session(self):
+        # Retrieve server address from nets file (to test if name is correct)
+        old_address = self._get_server_address()
+
+        # Start new session
+        self._initialize_new_session()
+
+        # Send out the updated address to everyone else
+        new_address = self.local_address
+        self.interpreter.store.update_address(old_address, new_address, local=False)
 
     def _remove_socket(self, s):
         # Stop listening for input from the client
@@ -140,7 +194,6 @@ class Server:
                             print('Closing connection with {0} port: {1}'.format(client_host, client_port))
 
                             self._remove_socket(s)
-
 
                 # Handle write sockets
                 for s in writable:

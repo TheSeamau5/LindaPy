@@ -74,6 +74,7 @@ def _create_predicate(description):
 # [exec] rd(...)
 # [exec] in(...)
 # Request to join  [join] add IP port
+# Update address update old_IP old_port new_IP new_port
 # Dump table  [dump] add IP1 port1 IP2 port2 ...
 class Store:
     def __init__(self, session_name, local_address):
@@ -81,7 +82,7 @@ class Store:
         self.tuple_store = TupleStore(session_name)
 
 
-    # add host port [ ]
+    # add host port [x]
     # Triggered when received "[exec] add address.host address.port"
     def add_host(self, address, respond):
         changes = self.nets_store.add(address)
@@ -101,6 +102,50 @@ class Store:
         else:
             return response.decode('utf-8')
 
+    def _send_exec_remove_host(self, address, remote_address):
+        sock = socket.create_connection(remote_address)
+        host, port = address
+        message = "[exec] remove {0} {1}".format(host, port)
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    def remove_host(self, address, local=True):
+        changes = self.nets_store.remove(address)
+        self._resolve_changes(changes)
+
+        if not local:
+            remote_addresses = self.nets_store.get_remote_addresses()
+            for remote_address in remote_addresses:
+                self._send_exec_remove_host(address, remote_address)
+
+        return 'Host {0} removed'.format(address)
+
+    def _send_update_address(self, old_address, new_address, remote_address):
+        sock = socket.create_connection(remote_address)
+        message = "update {0} {1} {2} {3}".format(old_address[0], old_address[1], new_address[0], new_address[1])
+        sock.send(message.encode('utf-8'))
+        response = sock.recv(1024)
+        sock.close()
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
+
+    def update_address(self, old_address, new_address, local=True):
+        self.nets_store.update_address(old_address, new_address)
+        if not local:
+            # Broadcast store update to all remote addresses
+            remote_addresses = self.nets_store.get_remote_addresses()
+            for remote_address in remote_addresses:
+                if not remote_address == new_address:
+                    self._send_update_address(old_address, new_address, remote_address)
+
+        return 'Address updated!'
 
     # Request to join
     # Triggered when received "add B.host B.port"
@@ -187,7 +232,7 @@ class Store:
 
     # Send tuples(that hash to a given slot) to some address
     def send_tuples(self, slot, address):
-        tuples = self.tuple_store.remove_all(lambda t: hash_tuple(t) == slot)
+        tuples = self.tuple_store.read_all(lambda t: hash_tuple(t) == slot)
         for t in tuples:
             self._insert_remote(t, address)
 
