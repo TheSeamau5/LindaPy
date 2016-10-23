@@ -83,11 +83,11 @@ class Store:
 
     # add host port [ ]
     # Triggered when received "[exec] add address.host address.port"
-    def add_host(self, address):
+    def add_host(self, address, respond):
         changes = self.nets_store.add(address)
         # resolve changes
         self._resolve_changes(changes)
-        return None
+        return respond('Host {0} added'.format(address))
 
     def _send_exec_add_host(self, address, remote_address):
         sock = socket.create_connection(remote_address)
@@ -120,7 +120,7 @@ class Store:
 
     # resolve request to join from some server [ ]
     # Triggered when received "[join] add B.host B.port"
-    def resolve_request_to_join(self, address):
+    def resolve_request_to_join(self, address, respond):
         print('Received request to join from: {0}'.format(address))
         # 1. Get list of all remote addresses
         remote_addresses = self.nets_store.get_remote_addresses()
@@ -135,38 +135,41 @@ class Store:
         changes = self.nets_store.add(address)
         print('Get changes: {0}'.format(changes))
 
+        # Respond with Acknowledgement
+        respond('Joined Linda session successfully')
+
         print('Send table dump to new address')
         # 4. Dump new table on new address
-        command = self._send_table_dump(address)
+        self._send_table_dump(address)
 
         print('Resolve changes')
         # 5. Resolve changes
         self._resolve_changes(changes)
 
         print('Resolved request to join')
-        return command
+        return None
 
 
     # send table [x]
     def _send_table_dump(self, address):
         print('Forming command')
         command = '[dump] add {0}'.format(' '.join(['{0} {1}'.format(x[0], x[1]) for x in self.nets_store.table]))
-        return command
-        # print('Creating socket connection')
-        # sock = socket.create_connection(address)
-        # print('Socket connection created')
-        # print('Sending command')
-        # sock.send(command.encode('utf-8'))
-        # print('Command send and waiting for response')
-        # #response = sock.recv(1024)
-        # print('Response received')
-        # print('Closing socket')
-        # sock.close()
-        # # print('Socket closed')
-        # # if not response:
-        # #     return None
-        # # else:
-        # #     return response.decode('utf-8')
+        # return command
+        print('Creating socket connection')
+        sock = socket.create_connection(address)
+        print('Socket connection created')
+        print('Sending command')
+        sock.send(command.encode('utf-8'))
+        print('Command send and waiting for response')
+        response = sock.recv(1024)
+        print('Response received')
+        print('Closing socket')
+        sock.close()
+        print('Socket closed')
+        if not response:
+            return None
+        else:
+            return response.decode('utf-8')
 
 
     # dump table [x]

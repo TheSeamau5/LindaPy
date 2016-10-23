@@ -31,7 +31,7 @@ class Interpreter:
                 for arg in tree['args']:
                     address = (arg['host'], arg['port'])
                     self.store.add_host(address, respond)
-                    return None
+                    return respond(None)
 
             elif 'directive' in tree and tree['directive'] == 'dump':
                 print('This is a dump add')
@@ -39,16 +39,16 @@ class Interpreter:
                 for arg in tree['args']:
                     address = (arg['host'], arg['port'])
                     table.append(address)
-                self.store.dump_table(table, respond)
-                return None
+                self.store.dump_table(table)
+                return respond(None)
 
             # Normal case:
             else:
                 print('This is a regular add')
                 for arg in tree['args']:
                     address = (arg['host'], arg['port'])
-                    self.store.resolve_request_to_join(address, respond)
-                    return None
+                    self.store.request_to_join(address)
+                    return respond(None)
 
 
         # elif tree['command'] == 'remove':
