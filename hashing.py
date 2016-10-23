@@ -249,3 +249,56 @@ def get_changes_for_item(item, diffs):
                 continue
 
     return list(set(changes))
+
+
+# Get the change set for an item between two tables
+def get_change_set(item, table1, table2):
+    d = diff(table1, table2)
+    send_changes = get_changes_for_item(item, d)
+    remove_changes = get_remove_set(item, table1, table2)
+    return send_changes, remove_changes
+
+
+def get_full_data_set(table):
+    data_set = {}
+    for item in set(table):
+        data_set[item] = get_data_set(item, table)
+    return data_set
+
+
+def get_full_change_set(old_table, new_table):
+    old_data_set = get_full_data_set(old_table)
+    new_data_set = get_full_data_set(new_table)
+
+    receive_set = {}
+
+    for item, slots in new_data_set.items():
+        if item not in old_data_set and len(slots) > 0:
+            receive_set[item] = slots
+        elif item in old_data_set and len(slots) > 0:
+            receive_slots = []
+            for s in slots:
+                if s not in old_data_set[item]:
+                    receive_slots.append(s)
+            if len(receive_slots) > 0:
+                receive_set[item] = receive_slots
+
+    remove_set = {}
+
+    for item, slots in old_data_set.items():
+        if item not in new_data_set and len(slots) > 0:
+            remove_set[item] = slots
+
+        elif item in new_data_set and len(slots) > 0:
+            remove_slots = []
+            for s in slots:
+                if s not in new_data_set[item]:
+                    remove_slots.append(s)
+            if len(remove_slots) > 0:
+                remove_set[item] = remove_slots
+
+    return receive_set, remove_set
+
+
+# t0 = ['a', 'a', 'a', 'c', 'b', 'b', 'b', 'c']
+# t1 = ['a','a','d','c','b','b','d','c']
