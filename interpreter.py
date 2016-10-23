@@ -74,12 +74,16 @@ class Interpreter:
         elif tree['command'] == 'rd':
             description = tree['args']
 
-            return respond(self.store.read(description, local=True))
+            local = 'directive' in tree and tree['directive'] == 'exec'
+
+            return respond(self.store.read(description, local=local))
 
         elif tree['command'] == 'in':
             description = tree['args']
 
-            return respond(self.store.remove(description, local=True))
+            local = 'directive' in tree and tree['directive'] == 'exec'
+
+            return respond(self.store.remove(description, local=local))
 
     # respond : a -> ()
     def interpret(self, command, respond):
