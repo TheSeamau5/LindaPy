@@ -155,6 +155,25 @@ def generate_replica_table(table):
     return [_get_replica(x) for x in descriptive_table]
 
 
+def get_data_set(item, table):
+    rt = generate_replica_table(table)
+    data_set = []
+
+    for (original_index, original_item), (replica_index, replica_item) in rt:
+        if original_item == item or replica_item == item:
+            data_set.append(original_index)
+
+    return list(set(data_set))
+
+
+def get_remove_set(item, table1, table2):
+    data_set1 = get_data_set(item, table1)
+    data_set2 = get_data_set(item, table2)
+
+    remove_set = [x for x in data_set1 if x not in data_set2]
+    return remove_set
+
+
 def get_replica_slot(slot, table):
     try:
         rt = generate_replica_table(table)
