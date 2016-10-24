@@ -52,6 +52,7 @@ Now, from the prompt, add the first server as follows
 
     linda> add 10.0.0.59 52971
 
+
 This will automatically link the new server to the first server, no need to perform the add on the other server.
 
 This will also hold for any subsequent server you create.

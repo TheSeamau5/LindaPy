@@ -59,6 +59,9 @@ class NetsStore:
         self.persist_to_disk()
         return change_set
 
+    def get_owned_slots(self):
+        return hashing.get_data_set(self.local, self.table)
+
     # Get a list of all the addresses
     def get_addresses(self):
         return list(set(self.table))

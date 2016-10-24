@@ -1,5 +1,6 @@
 import csv
 import socket
+import zlib
 
 import constants
 from checker import Checker
@@ -40,7 +41,9 @@ class Client:
             # Check the command first before sending it
             if self.checker.check(command):
                 # Send the command to the server
-                self.socket.send(command.encode('utf-8'))
+                encoded_command = command.encode('utf-8')
+                compressed_command = zlib.compress(encoded_command)
+                self.socket.send(compressed_command)
 
                 # Get response from server
                 data = self.socket.recv(1024)
@@ -50,7 +53,6 @@ class Client:
                     self.socket.close()
                 else:
                     # Decode the result and print it
-                    result = data.decode('utf-8')
+                    uncompressed_data = zlib.decompress(data)
+                    result = uncompressed_data.decode('utf-8')
                     print(result)
-
-

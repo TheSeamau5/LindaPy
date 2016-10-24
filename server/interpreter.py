@@ -1,14 +1,3 @@
-# Actions:
-# add IP port
-# remove IP port
-# out(...)
-# rd(...)
-# in(...)
-# [exec] out(...)
-# [exec] rd(...)
-# [exec] in(...)
-# Request to join  [join] add IP port
-# Dump table  [dump] add IP1 port1 IP2 port2 ...
 from parser import parse
 
 
@@ -70,7 +59,9 @@ class Interpreter:
 
             t = tuple(t)
 
-            return respond(self.store.insert(t))
+            local = 'directive' in tree and tree['directive'] == 'exec'
+
+            return respond(self.store.insert(t, local=local))
 
         elif tree['command'] == 'rd':
             description = tree['args']

@@ -65,20 +65,6 @@ def _create_predicate(description):
     return lambda t: _match_description_to_tuple(description, t)
 
 
-# Actions:
-# add IP port
-# remove IP port
-# out(...)
-# rd(...)
-# in(...)
-# [exec] out(...)
-# [exec] rd(...)
-# [exec] in(...)
-# send(host, port, hash1, hash2, hash3, ...)
-# delete(hash1, hash2, hash3, ....)
-# Request to join  [join] add IP port
-# Update address update old_IP old_port new_IP new_port
-# Dump table  [dump] add IP1 port1 IP2 port2 ...
 class Store:
     def __init__(self, session_name, local_address):
         self.nets_store = NetsStore(session_name, local_address)
@@ -96,7 +82,7 @@ class Store:
         sock = socket.create_connection(address, timeout=10)
 
         # 4. Send message to address
-        sock.send(encoded_message)  # TODO: Send compressed message instead
+        sock.send(compressed_message)  # TODO: Send compressed message instead
 
         # 5. decode/decompress response and return it
         response = sock.recv(1024)
@@ -104,7 +90,8 @@ class Store:
         if not response:
             return None
         else:
-            return response.decode('utf-8')
+            uncompressed_response = zlib.decompress(response)
+            return uncompressed_response.decode('utf-8')
 
     # Method to send/receive message to slot
     def _send_receive(self, message, slot, send_to_backup=False):
@@ -234,22 +221,22 @@ class Store:
         print('Resolving Change Set')
         receive_set, remove_set = change_set
 
-        print('Handling Recieve Set')
+        print('Handling Receive Set')
         print(receive_set)
         # Handle receive set
         for recipient, slots in receive_set.items():
             print('Handling recipient: {0}'.format(recipient))
-            for slot in slots:
-                print('Handling slot: {0}'.format(slot))
-                if self.nets_store.has_slot(slot, include_backup=True):
-                    print('Slot is found locally')
-                    print('Sending tuples out to recipient')
-                    self.send_tuples(slot, recipient)
-                else:
-                    print('Slot is found remotely')
-                    address = self.nets_store.table[slot]
-                    print('Sending the send command to recipient')
-                    self._send_send_command(address, recipient, slot)
+            owned_slots = self.nets_store.get_owned_slots()
+
+            outgoing_slots = set(slots) & set(owned_slots)
+            self.send_tuples_many(outgoing_slots, recipient)
+
+            remote_slots = set(slots) - set(owned_slots)
+            for slot in remote_slots:
+                print('Slot is found remotely')
+                address = self.nets_store.table[slot]
+                print('Sending the send command to recipient')
+                self._send_send_command(address, recipient, slot)
 
         # Handle remove set
         for address, slots in remove_set.items():
@@ -257,6 +244,15 @@ class Store:
                 self.tuple_store.remove_all(lambda t: hash_tuple(t) in slots)
             else:
                 self._send_delete_command(address, slots)
+
+    def send_tuples_many(self, slots, address):
+        for slot in slots:
+            print('Sending #{0} tuples to {1}'.format(slot, address))
+
+        tuples = self.tuple_store.read_all(lambda t: hash_tuple(t) in slots)
+        print('Tuples: {0}'.format(tuples))
+        for t in tuples:
+            self._insert_remote(t, address)
 
     # Send tuples(that hash to a given slot) to some address
     def send_tuples(self, slot, address):
@@ -270,14 +266,22 @@ class Store:
         message = "[exec] out{0}".format(t)
         return self._send_receive_to_address(message, address)
 
-    def insert(self, t):
-        slot = hash_tuple(t)
-        address = self.nets_store.table[slot]
-
-        if address == self.nets_store.local:
+    def insert(self, t, local=True):
+        if local:
+            # If this is a local insert, just insert
             return self.tuple_store.insert(t)
         else:
-            return self._insert_remote(t, address)
+            slot = hash_tuple(t)
+            address = self.nets_store.table[slot]
+            if address == self.nets_store.local:
+                # Insert in backup
+                backup = self.nets_store.get_backup(slot)
+                backup_address = self.nets_store.table[backup]
+                self._insert_remote(t, backup_address)
+
+                return self.tuple_store.insert(t)
+            else:
+                return self._insert_remote(t, address)
 
     def _read_remote(self, description, address):
         t_str = _description_to_tuple_string(description)

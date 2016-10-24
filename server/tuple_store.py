@@ -35,6 +35,7 @@ class TupleStore:
     def insert(self, t):
         self.tuples.append(t)
         self.persist_to_disk()
+        return t
 
     def read(self, predicate):
         try:

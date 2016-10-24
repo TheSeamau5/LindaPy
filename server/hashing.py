@@ -13,8 +13,8 @@ def generate_consistent_hasher(n=1024):
 
     return generate_table
 
-n = 8
-# n = 1024
+# n = 8
+n = 1024
 # Consistent hash function
 consistent_hash = generate_consistent_hasher(n)
 
@@ -298,7 +298,3 @@ def get_full_change_set(old_table, new_table):
                 remove_set[item] = remove_slots
 
     return receive_set, remove_set
-
-
-# t0 = ['a', 'a', 'a', 'c', 'b', 'b', 'b', 'c']
-# t1 = ['a','a','d','c','b','b','d','c']

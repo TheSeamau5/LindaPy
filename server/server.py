@@ -3,6 +3,7 @@ import select
 import socket
 import threading
 import uuid
+import zlib
 
 from queue import Queue, Empty
 
@@ -131,7 +132,9 @@ class Server:
         print('Processing command: {0}'.format(command))
 
         def respond(response):
-            client.send(str(response).encode('utf-8'))
+            encoded_response = str(response).encode('utf-8')
+            compressed_response = zlib.compress(encoded_response)
+            client.send(compressed_response)
 
         self.interpreter.interpret(command, respond)
 
@@ -178,7 +181,8 @@ class Server:
 
                         if data:
                             # Decode data to string
-                            message = data.decode('utf-8')
+                            uncompressed_message = zlib.decompress(data)
+                            message = uncompressed_message.decode('utf-8')
 
                             print('Received "{0}" from {1} port: {2}'.format(message, client_host, client_port))
 
