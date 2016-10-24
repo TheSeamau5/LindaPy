@@ -74,6 +74,8 @@ def _create_predicate(description):
 # [exec] out(...)
 # [exec] rd(...)
 # [exec] in(...)
+# send(host, port, hash1, hash2, hash3, ...)
+# delete(hash1, hash2, hash3, ....)
 # Request to join  [join] add IP port
 # Update address update old_IP old_port new_IP new_port
 # Dump table  [dump] add IP1 port1 IP2 port2 ...
@@ -83,6 +85,7 @@ class Store:
         self.tuple_store = TupleStore(session_name)
 
     def _send_receive_to_address(self, message, address):
+        print('Sending "{0}" to {1}'.format(message, address))
         # 1. Encode message to utf-8
         encoded_message = message.encode('utf-8')
 
@@ -126,9 +129,9 @@ class Store:
     # add host port [x]
     # Triggered when received "[exec] add address.host address.port"
     def add_host(self, address, respond):
-        changes = self.nets_store.add(address)
+        change_set = self.nets_store.add(address)
         # resolve changes
-        self._resolve_changes(changes)
+        self._resolve_change_set(change_set)
         return respond('Host {0} added'.format(address))
 
     def _send_exec_add_host(self, address, remote_address):
@@ -142,8 +145,8 @@ class Store:
         return self._send_receive_to_address(message, remote_address)
 
     def remove_host(self, address, local=True):
-        changes = self.nets_store.remove(address)
-        self._resolve_changes(changes)
+        change_set = self.nets_store.remove(address)
+        self._resolve_change_set(change_set)
 
         if not local:
             remote_addresses = self.nets_store.get_remote_addresses()
@@ -188,8 +191,8 @@ class Store:
 
         print('Add the new address to the store')
         # 3. Add address to the nets store and get changes
-        changes = self.nets_store.add(address)
-        print('Get changes: {0}'.format(changes))
+        change_set = self.nets_store.add(address)
+        print('Get change set: {0}'.format(change_set))
 
         # Respond with Acknowledgement
         respond('Joined Linda session successfully')
@@ -200,11 +203,10 @@ class Store:
 
         print('Resolve changes')
         # 5. Resolve changes
-        self._resolve_changes(changes)
+        self._resolve_change_set(change_set)
 
         print('Resolved request to join')
         return None
-
 
     # send table [x]
     def _send_table_dump(self, address):
@@ -217,16 +219,50 @@ class Store:
         self.nets_store.dump(table)
         return None
 
+    def _send_send_command(self, address, recipient, slot):
+        print('Sending send command')
+        host, port = recipient
+        message = 'send({0},{1},{2})'.format(host, port, slot)
+        return self._send_receive_to_address(message, address)
 
-    # resolve changes [ ]
-    def _resolve_changes(self, changes):
-        for change in changes:
-            slot, remote_address = change
-            self.send_tuples(slot, remote_address)
+    def _send_delete_command(self, address, slots):
+        message = 'delete({0})'.format(','.join([str(x) for x in slots]))
+        return self._send_receive_to_address(message, address)
+
+    # resolve changes [x]
+    def _resolve_change_set(self, change_set):
+        print('Resolving Change Set')
+        receive_set, remove_set = change_set
+
+        print('Handling Recieve Set')
+        print(receive_set)
+        # Handle receive set
+        for recipient, slots in receive_set.items():
+            print('Handling recipient: {0}'.format(recipient))
+            for slot in slots:
+                print('Handling slot: {0}'.format(slot))
+                if self.nets_store.has_slot(slot, include_backup=True):
+                    print('Slot is found locally')
+                    print('Sending tuples out to recipient')
+                    self.send_tuples(slot, recipient)
+                else:
+                    print('Slot is found remotely')
+                    address = self.nets_store.table[slot]
+                    print('Sending the send command to recipient')
+                    self._send_send_command(address, recipient, slot)
+
+        # Handle remove set
+        for address, slots in remove_set.items():
+            if address == self.nets_store.local:
+                self.tuple_store.remove_all(lambda t: hash_tuple(t) in slots)
+            else:
+                self._send_delete_command(address, slots)
 
     # Send tuples(that hash to a given slot) to some address
     def send_tuples(self, slot, address):
+        print('Sending #{0} tuples to {1}'.format(slot, address))
         tuples = self.tuple_store.read_all(lambda t: hash_tuple(t) == slot)
+        print('Tuples: {0}'.format(tuples))
         for t in tuples:
             self._insert_remote(t, address)
 
@@ -280,6 +316,10 @@ class Store:
                     return self.tuple_store.read(lambda t: t == query_tuple)
                 else:
                     return self._read_remote(description, address)
+
+    def remove_slot(self, slot):
+        tuples = self.tuple_store.remove_all(lambda t: hash_tuple(t) == slot)
+        return tuples
 
     def _remove_remote(self, description, address):
         t_str = _description_to_tuple_string(description)

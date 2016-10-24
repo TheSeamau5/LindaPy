@@ -50,11 +50,6 @@ class Interpreter:
                     self.store.request_to_join(address)
                     return respond(None)
 
-        # elif tree['command'] == 'remove':
-        #     for arg in tree['args']:
-        #         address = (arg['host'], arg['port'])
-        #         return self.nets_store.remove(address)
-
         elif tree['command'] == 'remove':
             # [exec] remove B.host B.port
             local = 'directive' in tree and tree['directive'] == 'exec'
@@ -90,6 +85,27 @@ class Interpreter:
             local = 'directive' in tree and tree['directive'] == 'exec'
 
             return respond(self.store.remove(description, local=local))
+
+        # Extra commands
+        # Receive command to send slots to an address
+        elif tree['command'] == 'send':
+            if len(tree['args']) > 2:
+                host = tree['args'][0]
+                port = int(tree['args'][1])
+                slots = [int(x) for x in tree['args'][2:]]
+                address = (host, port)
+                # Send hashes to address
+                for slot in slots:
+                    self.store.send_tuples(slot, address)
+            return respond(None)
+
+        # Receive command to delete all tuples in a given slot
+        elif tree['command'] == 'delete':
+            if len(tree['args']) > 0:
+                slots = [int(x) for x in tree['args']]
+                for slot in slots:
+                    self.store.remove_slot(slot)
+            return respond(None)
 
     # respond : a -> ()
     def interpret(self, command, respond):

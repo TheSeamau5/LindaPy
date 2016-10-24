@@ -1,0 +1,60 @@
+Instructions:
+
+Prerequisites:
+    - Python3
+    - ply (Python Lex-Yacc package)
+
+Install Ply for Python 3:
+    - run "pip3 install ply"
+
+Once installed, you have all that you need to run P2
+
+P2 is split between a client application and a server application
+
+To run the server:
+    - Go to P2 directory ("cd P2")
+    - run "python server"
+
+A server should now be running with the following output
+
+    Starting new session with name: 61ed69ed5cfc4b08a4d15c05fb3432a8
+    Starting server on 10.0.0.59 port: 52971
+    Waiting for input
+
+
+The name printed there is the name of the subdirectory where this server is running.
+Furthermore, the server address and port number is displayed.
+The server is now running and is just waiting for input.
+
+To run the client:
+    - Open a new window
+    - Go to P2 directory ("cd P2")
+    - run "python client 61ed69ed5cfc4b08a4d15c05fb3432a8"
+    (replace the session name with the one actually displayed by the server)
+
+Now, you should be presented with a prompt
+
+    linda>
+
+You may enter a linda command there and you will get a response
+
+If you wish to run a new server, open a new window and repeat the above steps.
+
+Suppose you want to add run a second server:
+    - run "python server"
+    - open new window and run "python client <new server name>"
+
+The new client will present you with the prompt
+
+    linda>
+
+Now, from the prompt, add the first server as follows
+
+    linda> add 10.0.0.59 52971
+
+This will automatically link the new server to the first server, no need to perform the add on the other server.
+
+This will also hold for any subsequent server you create.
+Just run add any of the previous linda servers from the new server and now your new server will join Linda.
+
+If you wish to restore a server session, simply pass the name when you run "python server".

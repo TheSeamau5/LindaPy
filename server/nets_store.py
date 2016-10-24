@@ -40,10 +40,9 @@ class NetsStore:
         old_table = list(self.table)
         self.table = hashing.add_item(address, self.table)
         new_table = list(self.table)
-        diff = hashing.diff(old_table, new_table)
-        changes = hashing.get_changes_for_item(self.local, diff)
+        change_set = hashing.get_full_change_set(old_table, new_table)
         self.persist_to_disk()
-        return changes
+        return change_set
 
     # Just the dump the new table (overwriting everything)
     # Do not pay attention to changes
@@ -56,10 +55,9 @@ class NetsStore:
         old_table = list(self.table)
         self.table = hashing.remove_item(address, self.table)
         new_table = list(self.table)
-        diff = hashing.diff(old_table, new_table)
-        changes = hashing.get_changes_for_item(self.local, diff)
+        change_set = hashing.get_full_change_set(old_table, new_table)
         self.persist_to_disk()
-        return changes
+        return change_set
 
     # Get a list of all the addresses
     def get_addresses(self):
@@ -72,11 +70,14 @@ class NetsStore:
     # Get the backup given a slot
     def get_backup(self, slot):
         return hashing.get_replica_slot(slot, self.table)
-        # backup_slot = hashing.get_replica_slot(slot, self.table)
-        # if backup_slot is None:
-        #     return None
-        # else:
-        #     return backup_slot, self.table[backup_slot]
+
+    # Check if this machine has a slot
+    def has_slot(self, slot, include_backup=False):
+        if include_backup:
+            backup_slot = self.get_backup(slot)
+            return self.local == self.table[slot] or self.local == self.table[backup_slot]
+        else:
+            return self.local == self.table[slot]
 
     def update_address(self, old_address, new_address):
         if old_address == self.local:

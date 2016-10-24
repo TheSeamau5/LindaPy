@@ -32,7 +32,6 @@ class TupleStore:
         else:
             self.load_from_disk()
 
-
     def insert(self, t):
         self.tuples.append(t)
         self.persist_to_disk()
